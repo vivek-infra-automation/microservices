@@ -15,8 +15,9 @@ spec:
   - name: kaniko
     image: gcr.io/kaniko-project/executor:latest
     command:
-    - cat
-    tty: true
+    - /busybox/sh
+    - -c
+    - "while true; do sleep 30; done"
     volumeMounts:
     - name: workspace-volume
       mountPath: /workspace
