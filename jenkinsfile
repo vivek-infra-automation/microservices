@@ -1,6 +1,7 @@
 pipeline {
     agent {
         kubernetes {
+            cloud 'k8s'
             defaultContainer 'jnlp'
             yaml """
 apiVersion: v1
@@ -25,6 +26,12 @@ spec:
     env:
     - name: AWS_DEFAULT_REGION
       value: "us-east-1"
+  - name: kubectl
+    image: bitnami/kubectl:latest
+    command:
+    - sleep
+    args:
+    - 9999999
   volumes:
   - name: workspace-volume
     emptyDir: {}
