@@ -6,7 +6,6 @@ pipeline {
             yaml """
 apiVersion: v1
 kind: Pod
-namespace: jenkins-ns
 metadata:
   labels:
     agent: kaniko
@@ -14,11 +13,10 @@ spec:
   serviceAccountName: jenkins
   containers:
   - name: kaniko
-    image: gcr.io/kaniko-project/executor:debug
+    image: gcr.io/kaniko-project/executor:latest
     command:
-    - sleep
-    args:
-    - 9999999
+    - /busybox/cat
+    tty: true
     volumeMounts:
     - name: workspace-volume
       mountPath: /workspace
@@ -27,12 +25,6 @@ spec:
     env:
     - name: AWS_DEFAULT_REGION
       value: "us-east-1"
-  - name: kubectl
-    image: bitnami/kubectl:latest
-    command:
-    - sleep
-    args:
-    - 9999999
   volumes:
   - name: workspace-volume
     emptyDir: {}
