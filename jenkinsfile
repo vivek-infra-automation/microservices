@@ -1,7 +1,6 @@
 pipeline {
     agent {
         kubernetes {
-            inheritFrom 'predefined-pod-template'
             defaultContainer 'jnlp'
             yaml """
 apiVersion: v1
