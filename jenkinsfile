@@ -1,0 +1,122 @@
+pipeline {
+    agent {
+        kubernetes {
+            label 'kaniko-agent'
+            defaultContainer 'jnlp'
+            yaml """
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    agent: kaniko
+spec:
+  containers:
+  - name: kaniko
+    image: gcr.io/kaniko-project/executor:latest
+    imagePullPolicy: Always
+    command:
+    - cat
+    tty: true
+    volumeMounts:
+    - name: docker-config
+      mountPath: /kaniko/.docker
+    - name: github-ssh-key
+      mountPath: /root/.ssh
+  volumes:
+  - name: docker-config
+    configMap:
+      name: docker-config
+  - name: github-ssh-key
+    configMap:
+      name: github-ssh-key
+"""
+        }
+    }
+    environment {
+        REGISTRY = '150916258276.dkr.ecr.us-east-1.amazonaws.com/mircoservices'
+        EXCHANGE = "${REGISTRY}/exchange"
+        CONVERSION = "${REGISTRY}/conversion"
+        DOCKER_CONFIG = '/kaniko/.docker/'
+        GIT_URL = 'git@github.com:vivek-infra-automation/microservices.git'
+        COMMIT_ID = ''
+        BRANCH = "${params.Build_Identity}"
+        GITHUB_CREDENTIALS_ID = 'github-ssh-key'
+        APPLICATION = "${params.Delivery}"
+    }
+    parameters {
+        string(
+            description: 'Branch name or commit ID to build',
+            name: 'Build_Identity',
+            defaultValue: 'master',
+            trim: true
+        )
+        choice(
+            name: 'Delivery',
+            choices: ['exchange', 'conversion'],
+            description: 'Select the microservice to deploy'
+        )
+    }
+    stages {
+        stage('Checkout') {
+            steps {
+                script {
+                    git url: GIT_URL, branch: BRANCH
+                    COMMIT_ID = sh(script: 'git rev-parse --short HEAD', returnStdout: true).trim()
+                }
+            }
+        }
+
+        stage('Build Application') {
+            steps {
+                container('kaniko') {
+                    script {
+                        def image = ""
+                        if (APPLICATION == 'exchange') {
+                            image = "${EXCHANGE}:${COMMIT_ID}"
+                            sh """
+                            /kaniko/executor \
+                                --dockerfile 02-currency-conversion-microservice-basic/Dockerfile \
+                                --context ${env.WORKSPACE}/exchange \
+                                --destination ${image}
+                            """
+                        } else if (APPLICATION == 'conversion') {
+                            image = "${CONVERSION}:${COMMIT_ID}"
+                            sh """
+                            /kaniko/executor \
+                                --dockerfile 03-currency-conversion-microservice-advanced/Dockerfile \
+                                --context ${env.WORKSPACE}/conversion \
+                                --destination ${image}
+                            """
+                        }
+                    }
+                }
+            }
+        }
+
+        stage('Update and Deploy') {
+            steps {
+                container('kaniko') {
+                    script {
+                        def image = (APPLICATION == 'exchange') ? "${EXCHANGE}:${COMMIT_ID}" : "${CONVERSION}:${COMMIT_ID}"
+                        sh """
+                        kubectl set image deployment/${APPLICATION} ${APPLICATION}-container=${image}
+                        kubectl rollout status deployment/${APPLICATION}
+                        """
+                    }
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            cleanWs()
+        }
+        failure {
+            script {
+                echo 'Deployment failed, rolling back...'
+                sh 'kubectl rollout undo deployment/${APPLICATION}'
+            }
+        }
+    }
+}
