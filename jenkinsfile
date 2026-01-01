@@ -10,25 +10,28 @@ metadata:
   labels:
     agent: kaniko
 spec:
+  serviceAccountName: jenkins
   containers:
   - name: kaniko
-    image: gcr.io/kaniko-project/executor:latest
-    imagePullPolicy: Always
+    image: gcr.io/kaniko-project/executor:debug
     command:
-    - cat
-    tty: true
+    - sleep
+    args:
+    - 9999999
     volumeMounts:
+    - name: workspace-volume
+      mountPath: /workspace
     - name: docker-config
       mountPath: /kaniko/.docker
-    - name: github-ssh-key
-      mountPath: /root/.ssh
+    env:
+    - name: AWS_DEFAULT_REGION
+      value: "us-east-1"
   volumes:
+  - name: workspace-volume
+    emptyDir: {}
   - name: docker-config
     configMap:
       name: docker-config
-  - name: github-ssh-key
-    configMap:
-      name: github-ssh-key
 """
         }
     }
