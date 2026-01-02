@@ -109,9 +109,4 @@ spec:
             }
         }
     }
-    post {
-        always {
-            cleanWs()
-        }
-    }
 }
