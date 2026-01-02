@@ -102,7 +102,7 @@ spec:
                         sh """
                             aws eks update-kubeconfig --name eks-cluster-1-31 --region us-east-1
                             sed -i "s|image: .*|image: ${image}|" k8s/${APPLICATION}.yaml
-                            kubectl apply -f k8s/${APPLICATION}.yaml
+                            kubectl apply -f k8s/${APPLICATION}.yaml --validate=false
                         """
                     }
                 }

@@ -23,7 +23,7 @@ spec:
     spec:
       containers:
       - name: currency-exchange
-        image: 
+        image: 150916258276.dkr.ecr.us-east-1.amazonaws.com/exchange:49d1211
         imagePullPolicy: IfNotPresent
         ports:
         - name: liveness-port
