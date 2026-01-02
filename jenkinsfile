@@ -15,6 +15,13 @@ spec:
     env:
     - name: AWS_DEFAULT_REGION
       value: "us-east-1"
+  - name: kubectl
+    image: 150916258276.dkr.ecr.us-east-1.amazonaws.com/aws-kubectl:latest
+    command:
+    - /bin/sh
+    args:
+    - -c
+    - sleep 99d
 """
         }
     }
@@ -88,7 +95,7 @@ spec:
 
         stage('Update and Deploy') {
             steps {
-                container('kaniko') {
+                container('kubectl') {
                     script {
                         def image = (APPLICATION == 'exchange') ? "${EXCHANGE}:${COMMIT_ID}" : "${CONVERSION}:${COMMIT_ID}"
                         echo "Deploying ${APPLICATION} with image ${image}"
