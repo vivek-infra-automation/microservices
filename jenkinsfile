@@ -15,6 +15,12 @@ spec:
     env:
     - name: AWS_DEFAULT_REGION
       value: "us-east-1"
+  - name: kubectl
+    image: bitnami/kubectl:latest
+    command:
+    - sleep
+    args:
+    - 99d
 """
         }
     }
@@ -88,7 +94,7 @@ spec:
 
         stage('Update and Deploy') {
             steps {
-                container('kaniko') {
+                container('kubectl') {
                     script {
                         def image = (APPLICATION == 'exchange') ? "${EXCHANGE}:${COMMIT_ID}" : "${CONVERSION}:${COMMIT_ID}"
                         echo "Deploying ${APPLICATION} with image ${image}"
@@ -102,11 +108,8 @@ spec:
         }
     }
     post {
-        failure {
-            script {
-                echo 'Deployment failed, rolling back...'
-                sh 'kubectl rollout undo deployment/${APPLICATION}'
-            }
+        always {
+            cleanWs()
         }
     }
 }
