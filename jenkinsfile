@@ -92,10 +92,10 @@ spec:
                     script {
                         def image = (APPLICATION == 'exchange') ? "${EXCHANGE}:${COMMIT_ID}" : "${CONVERSION}:${COMMIT_ID}"
                         echo "Deploying ${APPLICATION} with image ${image}"
-                        // sh """
-                        //     sed -i 's|image: .*|image: ${image}|' k8s/${APPLICATION}.yaml
-                        //     kubectl apply -f k8s/${APPLICATION}.yaml
-                        // """
+                        sh """
+                            sed -i "s|image: .*|image: ${image}|" k8s/${APPLICATION}.yaml
+                            kubectl apply -f k8s/${APPLICATION}.yaml
+                        """
                     }
                 }
             }
