@@ -82,8 +82,8 @@ spec:
                             image = "${CONVERSION}:${COMMIT_ID}"
                             sh """
                             /kaniko/executor \
-                                --dockerfile 02-currency-conversion-microservice-advanced/Dockerfile \
-                                --context ${env.WORKSPACE}/02-currency-conversion-microservice-advanced \
+                                --dockerfile 02-currency-conversion-microservice-basic/Dockerfile \
+                                --context ${env.WORKSPACE}/02-currency-conversion-microservice-basic \
                                 --destination ${image}
                             """
                         }
