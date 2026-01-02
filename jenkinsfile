@@ -1,46 +1,29 @@
 pipeline {
     agent {
         kubernetes {
-            cloud 'k8s'
-            defaultContainer 'jnlp'
             yaml """
 apiVersion: v1
 kind: Pod
-metadata:
-  labels:
-    agent: kaniko
 spec:
   serviceAccountName: jenkins
   containers:
   - name: kaniko
     image: gcr.io/kaniko-project/executor:debug
     command:
-    - sh
-    - -c
-    - "while true; do sleep 30; done"
-    volumeMounts:
-    - name: workspace-volume
-      mountPath: /workspace
-    - name: docker-config
-      mountPath: /kaniko/.docker
+    - /busybox/cat
+    tty: true
     env:
     - name: AWS_DEFAULT_REGION
       value: "us-east-1"
-  volumes:
-  - name: workspace-volume
-    emptyDir: {}
-  - name: docker-config
-    configMap:
-      name: docker-config
 """
         }
     }
     environment {
-        REGISTRY = '150916258276.dkr.ecr.us-east-1.amazonaws.com/mircoservices'
+        REGISTRY = '150916258276.dkr.ecr.us-east-1.amazonaws.com'
         EXCHANGE = "${REGISTRY}/exchange"
         CONVERSION = "${REGISTRY}/conversion"
         DOCKER_CONFIG = '/kaniko/.docker/'
-        GIT_URL = 'git@github.com:vivek-infra-automation/microservices.git'
+        GIT_URL = 'https://github.com/vivek-infra-automation/microservices.git'
         COMMIT_ID = ''
         BRANCH = "${params.Build_Identity}"
         GITHUB_CREDENTIALS_ID = 'github-ssh-key'
@@ -53,17 +36,24 @@ spec:
             defaultValue: 'master',
             trim: true
         )
-        // choice(
-        //     name: 'Delivery',
-        //     choices: ['exchange', 'conversion'],
-        //     description: 'Select the microservice to deploy'
-        // )
+        choice(
+            name: 'Delivery',
+            choices: ['exchange', 'conversion'],
+            description: 'Select the microservice to deploy'
+        )
     }
     stages {
         stage('Checkout') {
             steps {
                 script {
-                    git url: GIT_URL, branch: BRANCH
+                    checkout([
+                        $class: 'GitSCM',
+                        branches: [[name: BRANCH]],
+                        userRemoteConfigs: [[
+                            url: GIT_URL,
+                            credentialsId: GITHUB_CREDENTIALS_ID
+                        ]]
+                    ])
                     COMMIT_ID = sh(script: 'git rev-parse --short HEAD', returnStdout: true).trim()
                 }
             }
